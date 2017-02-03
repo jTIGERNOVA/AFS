@@ -35,15 +35,22 @@ public class AFSPost extends AFSTask {
         _token = new Random().nextDouble() + "";
 
         String json = "{\"token\": \"" + _token + "\"}";
-        setResultPath("C:/temp6/cmd/" + getExecutionID() + "/" + new File(filePath).getName());
+        String dirToWrite = getResultDir() + getExecutionID() + File.separator + new File(filePath).getName();
+        File resultFilePath = new File(dirToWrite, getExecutionID() + "-token.json");
 
         try {
-            FileUtils.write(new File(getResultPath(), getTaskID() + "-token.json"), json, "UTF-8");
+            FileUtils.write(resultFilePath, json, "UTF-8");
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        System.out.println("Done with file for token: " + _token + " task: " + getTaskID());
+        System.out.println("Done with file for token: " + _token + " task: " + getTaskID() + ". Results saved at: " + resultFilePath);
+
+        if (triggerGetStatus) {
+            AFSGetStatus getStatus = new AFSGetStatus(getExecutionID(), resultFilePath.getPath(), dirToWrite, true);
+
+            getStatus.runTask();
+        }
     }
 
     @Override

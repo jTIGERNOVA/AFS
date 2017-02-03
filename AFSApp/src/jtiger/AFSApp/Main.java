@@ -34,7 +34,7 @@ public class Main {
         post4.runTask();
         post5.runTask();
 
-        threadPoolExecutor.shutdown();
+        //threadPoolExecutor.shutdown();
     }
 
     private static int incrementRunCount() {

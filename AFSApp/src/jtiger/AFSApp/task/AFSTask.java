@@ -1,5 +1,6 @@
 package jtiger.AFSApp.task;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -15,7 +16,7 @@ public abstract class AFSTask {
     private final String taskID;
     private final String executionID;
     protected String _token;
-    protected String _resultPath;
+    protected String _resultDir = "C:/temp6/cmd/";
 
     public AFSTask(String executionID) {
         if (executionID == null)
@@ -31,6 +32,14 @@ public abstract class AFSTask {
 
     public static void setExecutor(ExecutorService executor) {
         AFSTask.executor = executor;
+    }
+
+    protected static boolean isFile(String path) {
+        return (path != null) && new File(path).exists();
+    }
+
+    protected static boolean isUrlValid(String path) {
+        return (path != null) && path.trim().length() > 0;
     }
 
     public boolean runTask() {
@@ -67,12 +76,12 @@ public abstract class AFSTask {
 
     protected abstract String getExecutionKey();
 
-    public String getResultPath() {
-        return _resultPath;
+    public String getResultDir() {
+        return _resultDir;
     }
 
-    public void setResultPath(String resultPath) {
-        _resultPath = resultPath;
+    public void setResultDir(String resultDir) {
+        _resultDir = resultDir;
     }
 
     public String getTaskID() {

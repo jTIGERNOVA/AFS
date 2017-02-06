@@ -15,19 +15,15 @@ public class AFSGetStatus extends AFSTask {
 
     static Random r = new Random();
     private final String tokenJsonFilePath;
-    private final String statusDir;
     private String status;
     private boolean triggerGet;
 
-    public AFSGetStatus(String executionID, String tokenJsonFilePath, String statusDir, boolean triggerGet) {
+    public AFSGetStatus(String executionID, String tokenJsonFilePath, boolean triggerGet) {
         super(executionID);
         if (!isFile(tokenJsonFilePath))
             throw new RuntimeException("Could not find token file. Has the post been completed?");
-        if (!isUrlValid(statusDir))
-            throw new IllegalArgumentException("statusDir");
 
         this.tokenJsonFilePath = tokenJsonFilePath;
-        this.statusDir = statusDir;
         this.triggerGet = triggerGet;
     }
 
@@ -70,7 +66,10 @@ public class AFSGetStatus extends AFSTask {
 
         String json = "{\"status\": \"" + status + "\"}";
 
-        File file = new File(statusDir, getExecutionID() + "-status.json");
+        if (!isUrlValid(getExecutionResultDir()))
+            System.err.println("*Execution result directory must be set. Skipping...");
+
+        File file = new File(getExecutionResultDir(), getExecutionID() + "-status.json");
 
         try {
             FileUtils.write(file, json, "UTF-8");
@@ -79,7 +78,6 @@ public class AFSGetStatus extends AFSTask {
         }
 
         System.out.println("Done with status for token: " + _token + " task: " + getTaskID() + ". Results saved at: " + file.getPath());
-        ;
     }
 
     private void doStatusCheck() {
@@ -98,10 +96,6 @@ public class AFSGetStatus extends AFSTask {
 
     public String getTokenJsonFilePath() {
         return tokenJsonFilePath;
-    }
-
-    public String getStatusDir() {
-        return statusDir;
     }
 
     public boolean isTriggerGet() {

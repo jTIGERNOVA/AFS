@@ -16,7 +16,8 @@ public abstract class AFSTask {
     private final String taskID;
     private final String executionID;
     protected String _token;
-    protected String _resultDir = "C:/temp6/cmd/";
+    protected String _resultDir;
+    protected String _executionResultDir;
 
     public AFSTask(String executionID) {
         if (executionID == null)
@@ -24,6 +25,8 @@ public abstract class AFSTask {
 
         this.executionID = executionID;
         this.taskID = executionID + "-" + String.valueOf(hashCode());
+        //temp file path
+        setResultDir(System.getProperty("user.home") + File.separator + ".jTIGERNOVA" + File.separator + "AFS");
     }
 
     public static ExecutorService getExecutor() {
@@ -81,7 +84,22 @@ public abstract class AFSTask {
     }
 
     public void setResultDir(String resultDir) {
+        if (resultDir == null)
+            return;
+
+        if (!resultDir.endsWith(File.separator))
+            resultDir += File.separator;
+
         _resultDir = resultDir;
+        _executionResultDir = _resultDir + "0000";
+    }
+
+    public String getExecutionResultDir() {
+        return _executionResultDir;
+    }
+
+    public void setExecutionResultDir(String executionResultDir) {
+        this._executionResultDir = executionResultDir;
     }
 
     public String getTaskID() {

@@ -20,6 +20,7 @@ public class Main {
     public static void main(String[] args) {
 
         int count = incrementRunCount();
+        String resultPath = "C:/temp6/cmd";
         String executionID = String.format("%04d", count);
 
         AFSPost post1 = new AFSPost(executionID, "C:/temp/a.txt", "http://gmail.com", true);
@@ -27,6 +28,12 @@ public class Main {
         AFSPost post3 = new AFSPost(executionID, "C:/temp/a3.txt", "http://gmail.com", true);
         AFSPost post4 = new AFSPost(executionID, "C:/temp/a4.txt", "http://gmail.com", true);
         AFSPost post5 = new AFSPost(executionID, "C:/temp/a5.txt", "http://gmail.com", true);
+
+        post1.setResultDir(resultPath);
+        post2.setResultDir(resultPath);
+        post3.setResultDir(resultPath);
+        post4.setResultDir(resultPath);
+        post5.setResultDir(resultPath);
 
         post1.runTask();
         post2.runTask();

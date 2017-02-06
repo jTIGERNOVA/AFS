@@ -64,10 +64,12 @@ public class AFSGetStatus extends AFSTask {
         //save status
         status = new Random().nextDouble() + "";
 
-        String json = "{\"status\": \"" + status + "\"}";
+        String json = "{\"status\": \"" + status + "\", \"token\": \"" + _token + "\"}";
 
-        if (!isUrlValid(getExecutionResultDir()))
+        if (!isUrlValid(getExecutionResultDir())) {
             System.err.println("*Execution result directory must be set. Skipping...");
+            return;
+        }
 
         File file = new File(getExecutionResultDir(), getExecutionID() + "-status.json");
 
@@ -77,7 +79,14 @@ public class AFSGetStatus extends AFSTask {
             e.printStackTrace();
         }
 
-        System.out.println("Done with status for token: " + _token + " task: " + getTaskID() + ". Results saved at: " + file.getPath());
+        System.out.println("Done with 'GETSTATUS' for token: " + _token + " task: " + getTaskID() + ". Results saved at: " + file.getPath());
+
+        if (triggerGet) {
+            AFSGet get = new AFSGet(getExecutionID(), file.getPath());
+            get.setExecutionResultDir(getExecutionResultDir());
+
+            get.runTask();
+        }
     }
 
     private void doStatusCheck() {

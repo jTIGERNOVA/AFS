@@ -44,7 +44,7 @@ public class AFSPost extends AFSTask {
             e.printStackTrace();
         }
 
-        System.out.println("Done with file for token: " + _token + " task: " + getTaskID() + ". Results saved at: " + resultFilePath);
+        System.out.println("Done with 'POST' for token: " + _token + " task: " + getTaskID() + ". Results saved at: " + resultFilePath);
 
         if (triggerGetStatus) {
             AFSGetStatus getStatus = new AFSGetStatus(getExecutionID(), resultFilePath.getPath(), true);

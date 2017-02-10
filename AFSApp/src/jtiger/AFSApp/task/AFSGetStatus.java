@@ -18,8 +18,8 @@ public class AFSGetStatus extends AFSTask {
     private String status;
     private boolean triggerGet;
 
-    public AFSGetStatus(String executionID, String tokenJsonFilePath, boolean triggerGet) {
-        super(executionID);
+    public AFSGetStatus(String executionID, String tokenJsonFilePath, String endpoint, boolean triggerGet) {
+        super(executionID, endpoint);
         if (!isFile(tokenJsonFilePath))
             throw new RuntimeException("Could not find token file. Has the post been completed?");
 
@@ -71,7 +71,7 @@ public class AFSGetStatus extends AFSTask {
             return;
         }
 
-        File file = new File(getExecutionResultDir(), getExecutionID() + "-status.json");
+        File file = getResultFullPath();
 
         try {
             FileUtils.write(file, json, "UTF-8");
@@ -82,7 +82,7 @@ public class AFSGetStatus extends AFSTask {
         System.out.println("Done with 'GETSTATUS' for token: " + _token + " task: " + getTaskID() + ". Results saved at: " + file.getPath());
 
         if (triggerGet) {
-            AFSGet get = new AFSGet(getExecutionID(), file.getPath());
+            AFSGet get = new AFSGet(getExecutionID(), file.getPath(), getEndpoint());
             get.setExecutionResultDir(getExecutionResultDir());
 
             get.runTask();
@@ -101,6 +101,11 @@ public class AFSGetStatus extends AFSTask {
     @Override
     protected String getExecutionKey() {
         return tokenJsonFilePath;
+    }
+
+    @Override
+    protected String getTaskSuffix() {
+        return "status";
     }
 
     public String getTokenJsonFilePath() {

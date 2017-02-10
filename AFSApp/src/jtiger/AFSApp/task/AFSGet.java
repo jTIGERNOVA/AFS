@@ -18,12 +18,17 @@ public class AFSGet extends AFSTask {
     private String status;
     private String taskResult;
 
-    public AFSGet(String executionID, String statusJsonFilePath) {
-        super(executionID);
+    public AFSGet(String executionID, String statusJsonFilePath, String getEndpoint) {
+        super(executionID, getEndpoint);
         if (!isFile(statusJsonFilePath))
             throw new RuntimeException("Could not find status file. Has the GetStatus task been completed?");
 
         this.statusJsonFilePath = statusJsonFilePath;
+    }
+
+    @Override
+    protected String getTaskSuffix() {
+        return "get";
     }
 
     @Override
@@ -57,7 +62,7 @@ public class AFSGet extends AFSTask {
             return;
         }
 
-        File file = new File(getExecutionResultDir(), getExecutionID() + "-get.json");
+        File file = getResultFullPath();
 
         try {
             FileUtils.write(file, json, "UTF-8");
@@ -81,5 +86,6 @@ public class AFSGet extends AFSTask {
     protected String getExecutionKey() {
         return statusJsonFilePath;
     }
+
 
 }

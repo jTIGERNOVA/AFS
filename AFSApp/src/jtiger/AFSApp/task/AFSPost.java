@@ -12,14 +12,17 @@ import java.util.Random;
 public class AFSPost extends AFSTask {
 
     private final String filePath;
-    private final String postPath;
     private boolean triggerGetStatus;
 
-    public AFSPost(String executionID, String filePath, String postPath, boolean triggerGetStatus) {
-        super(executionID);
+    public AFSPost(String executionID, String filePath, String endpoint, boolean triggerGetStatus) {
+        super(executionID, endpoint);
         this.filePath = filePath;
-        this.postPath = postPath;
         this.triggerGetStatus = triggerGetStatus;
+    }
+
+    @Override
+    protected String getTaskSuffix() {
+        return "token";
     }
 
     @Override
@@ -36,7 +39,7 @@ public class AFSPost extends AFSTask {
 
         String json = "{\"token\": \"" + _token + "\"}";
         setExecutionResultDir(getResultDir() + getExecutionID() + File.separator + new File(filePath).getName());
-        File resultFilePath = new File(getExecutionResultDir(), getExecutionID() + "-token.json");
+        File resultFilePath = getResultFullPath();
 
         try {
             FileUtils.write(resultFilePath, json, "UTF-8");
@@ -47,7 +50,7 @@ public class AFSPost extends AFSTask {
         System.out.println("Done with 'POST' for token: " + _token + " task: " + getTaskID() + ". Results saved at: " + resultFilePath);
 
         if (triggerGetStatus) {
-            AFSGetStatus getStatus = new AFSGetStatus(getExecutionID(), resultFilePath.getPath(), true);
+            AFSGetStatus getStatus = new AFSGetStatus(getExecutionID(), resultFilePath.getPath(), getExecutionKey(), true);
             getStatus.setExecutionResultDir(getExecutionResultDir());
 
             getStatus.runTask();
@@ -69,9 +72,5 @@ public class AFSPost extends AFSTask {
 
     public String getFilePath() {
         return filePath;
-    }
-
-    public String getPostPath() {
-        return postPath;
     }
 }

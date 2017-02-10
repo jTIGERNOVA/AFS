@@ -18,12 +18,16 @@ public abstract class AFSTask {
     protected String _token;
     protected String _resultDir;
     protected String _executionResultDir;
+    private String endpoint;
 
-    public AFSTask(String executionID) {
+    public AFSTask(String executionID, String endpoint) {
         if (executionID == null)
             throw new IllegalArgumentException("executionID");
+        if (endpoint == null)
+            throw new IllegalArgumentException("endpoint");
 
         this.executionID = executionID;
+        this.endpoint = endpoint;
         this.taskID = executionID + "-" + String.valueOf(hashCode());
         //temp file path
         setResultDir(System.getProperty("user.home") + File.separator + ".jTIGERNOVA" + File.separator + "AFS");
@@ -43,6 +47,14 @@ public abstract class AFSTask {
 
     protected static boolean isUrlValid(String path) {
         return (path != null) && path.trim().length() > 0;
+    }
+
+    public String getEndpoint() {
+        return endpoint;
+    }
+
+    public void setEndpoint(String endpoint) {
+        this.endpoint = endpoint;
     }
 
     public boolean runTask() {
@@ -78,6 +90,12 @@ public abstract class AFSTask {
     protected abstract void doRun();
 
     protected abstract String getExecutionKey();
+
+    protected abstract String getTaskSuffix();
+
+    protected File getResultFullPath() {
+        return new File(getExecutionResultDir(), getExecutionID() + "-" + getTaskSuffix() + ".json");
+    }
 
     public String getResultDir() {
         return _resultDir;

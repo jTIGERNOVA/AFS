@@ -1,24 +1,26 @@
 package jtiger.AFSApp;
 
 import jtiger.AFSApp.task.AFSExecution;
+import jtiger.AFSApp.ui.AFSApp;
 
 public class Main {
 
     public static void main(String[] args) {
 
-        AFSExecution afsExecution = new AFSExecution("C:/temp6/cmd");
+        final AFSExecution afsExecution = new AFSExecution("C:/temp6/cmd");
 
         String[] files = new String[]{"C:/temp/a.txt", "C:/temp/a2.txt"};
         String endpoint = "http://gmail.com";
 
         afsExecution.execute(files, endpoint, AFSExecution.AFSOption.POST, true);
 
-        try {
-            Thread.sleep(30000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        afsExecution.exit();
+        AFSApp frame = new AFSApp();
+        frame.setOnClose(new Runnable() {
+            @Override
+            public void run() {
+                afsExecution.exit();
+            }
+        });
+        frame.setVisible(true);
     }
 }

@@ -65,6 +65,11 @@ public abstract class AFSTask {
             return false;
         }
 
+        if (executor.isShutdown() || executor.isTerminated()) {
+            System.err.println("Executor is inactive. Could not finish task");
+            return false;
+        }
+
         executor.execute(new Runnable() {
             @Override
             public void run() {

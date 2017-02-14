@@ -19,33 +19,34 @@ public class AFSExecution {
         AFSTask.setExecutor(threadPoolExecutor);
     }
 
-    private final String resultPath;
+    private String resultPath;
+    private OnExecutionIDUpdate onExecutionIDUpdate;
 
     public AFSExecution(String resultPath) {
         this.resultPath = resultPath;
     }
 
     private static int incrementRunCount() {
-        String preferencesPath = System.getProperty("user.home") + File.separator + ".jTIGERNOVA" + File.separator + "AFS.settings";
+        File prefFile = getPreferencesFile();
 
         int count = 1;
 
         try {
-            if (new File(preferencesPath).exists()) {
-                JSONObject pref = new JSONObject(FileUtils.readFileToString(new File(preferencesPath), "UTF-8"));
+            if (prefFile.exists()) {
+                JSONObject pref = new JSONObject(FileUtils.readFileToString(prefFile, "UTF-8"));
 
                 if (pref.has("runCount")) {
                     count = pref.getInt("runCount");
                 }
 
                 pref.put("runCount", count + 1);
-                FileUtils.write(new File(preferencesPath), pref.toString(), "UTF-8");
+                FileUtils.write(prefFile, pref.toString(), "UTF-8");
             } else {
                 JSONObject pref = new JSONObject();
 
                 pref.put("runCount", count + 1);
 
-                FileUtils.write(new File(preferencesPath), pref.toString(), "UTF-8");
+                FileUtils.write(prefFile, pref.toString(), "UTF-8");
             }
         } catch (JSONException e) {
             e.printStackTrace();
@@ -56,9 +57,40 @@ public class AFSExecution {
         return count;
     }
 
+    public static int getRunCount() {
+        int count = 1;
+        File prefFile = getPreferencesFile();
+        try {
+            if (prefFile.exists()) {
+                JSONObject pref = new JSONObject(FileUtils.readFileToString(prefFile, "UTF-8"));
+
+                if (pref.has("runCount")) {
+                    count = pref.getInt("runCount");
+                }
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return count;
+    }
+
+    public static String formatExecutionID(Number number) {
+        return String.format("%04d", number);
+    }
+
+    public static File getPreferencesFile() {
+        return new File(System.getProperty("user.home") + File.separator + ".jTIGERNOVA" + File.separator + "AFS.settings");
+    }
+
     public void execute(String[] files, String endpoint, AFSOption startOption, boolean autoContinue) {
         int count = incrementRunCount();
-        String executionID = String.format("%04d", count);
+        String executionID = formatExecutionID(count);
+
+        if (onExecutionIDUpdate != null)
+            onExecutionIDUpdate.update(executionID);
 
         for (String file : files) {
             if (startOption == AFSOption.POST) {
@@ -77,12 +109,32 @@ public class AFSExecution {
         }
     }
 
+    public OnExecutionIDUpdate getOnExecutionIDUpdate() {
+        return onExecutionIDUpdate;
+    }
+
+    public void setOnExecutionIDUpdate(OnExecutionIDUpdate onExecutionIDUpdate) {
+        this.onExecutionIDUpdate = onExecutionIDUpdate;
+    }
+
+    public String getResultPath() {
+        return resultPath;
+    }
+
+    public void setResultPath(String resultPath) {
+        this.resultPath = resultPath;
+    }
+
     public void exit() {
         AFSTask.getExecutor().shutdown();
     }
 
     public enum AFSOption {
         POST, GETSTATUS, GETRESULT
+    }
+
+    public interface OnExecutionIDUpdate {
+        void update(String newExecutionID);
     }
 }
 

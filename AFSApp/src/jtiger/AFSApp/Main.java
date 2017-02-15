@@ -28,7 +28,7 @@ public class Main {
         frame.setExecutedListener(new AFSApp.OnAFSExecutedListener() {
             @Override
             public void onExecute(AFSApp.AFSInput input) {
-                File[] files = FileUtils.listFiles(new File(input.srcDir), getSupportedFileExtensions(), false).toArray(new File[0]);
+                File[] files = FileUtils.listFiles(new File(input.srcDir), Util.getSupportedFileExtensions(), false).toArray(new File[0]);
 
                 if (files.length == 0) {
                     JOptionPane.showMessageDialog(null, "No files found. Select another directory");
@@ -109,9 +109,5 @@ public class Main {
             }
         });
         frame.setVisible(true);
-    }
-
-    public static String[] getSupportedFileExtensions() {
-        return new String[]{"txt", "json"};
     }
 }

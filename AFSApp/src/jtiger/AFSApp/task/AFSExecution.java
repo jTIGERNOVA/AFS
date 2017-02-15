@@ -87,29 +87,22 @@ public class AFSExecution {
         return new File(System.getProperty("user.home") + File.separator + ".jTIGERNOVA" + File.separator + "AFS.settings");
     }
 
-    public void execute(String[] files, String endpoint, AFSOption startOption, boolean autoContinue) {
+    public void execute(String[] files, String endpoint, AFSOption startOption, boolean autoContinue, boolean autoContinueLevelTwo)
+            throws AFSFormatException {
         int count = incrementRunCount();
         final String executionID = formatExecutionID(count);
 
         //execution started
-        executionStatusListener.onStart(executionID);
+        executionStatusListener.onStart(executionID, files.length);
 
         if (onExecutionIDUpdate != null)
             onExecutionIDUpdate.update(executionID);
 
         for (String file : files) {
-            if (startOption == AFSOption.POST) {
-                AFSPost task = new AFSPost(executionID, file, endpoint, autoContinue);
-                task.setResultDir(resultPath);
-                task.runTask();
-            } else if (startOption == AFSOption.GETSTATUS) {
-                AFSGetStatus task = new AFSGetStatus(executionID, file, endpoint, autoContinue);
-                task.setResultDir(resultPath);
-                task.runTask();
-            } else if (startOption == AFSOption.GETRESULT) {
-                AFSGet task = new AFSGet(executionID, file, endpoint);
-                task.setResultDir(resultPath);
-                task.runTask();
+            try {
+                handleFile(startOption, executionID, file, endpoint, autoContinue, autoContinueLevelTwo);
+            } catch (AFSFormatException ex) {
+                System.err.println("Error: " + ex.getMessage());
             }
         }
 
@@ -139,6 +132,22 @@ public class AFSExecution {
                 } while (tasksRunning);
             }
         });
+    }
+
+    private void handleFile(AFSOption startOption, String executionID, String file, String endpoint, boolean autoContinue, boolean autoContinueLevelTwo) {
+        if (startOption == AFSOption.POST) {
+            AFSPost task = new AFSPost(executionID, file, endpoint, autoContinue, autoContinueLevelTwo);
+            task.setResultDir(resultPath);
+            task.runTask();
+        } else if (startOption == AFSOption.GETSTATUS) {
+            AFSGetStatus task = new AFSGetStatus(executionID, file, endpoint, autoContinue);
+            task.setResultDir(resultPath);
+            task.runTask();
+        } else if (startOption == AFSOption.GETRESULT) {
+            AFSGetResult task = new AFSGetResult(executionID, file, endpoint);
+            task.setResultDir(resultPath);
+            task.runTask();
+        }
     }
 
     public OnExecutionIDUpdate getOnExecutionIDUpdate() {
@@ -178,7 +187,7 @@ public class AFSExecution {
     }
 
     public interface ExecutionStatusListener {
-        void onStart(String executionID);
+        void onStart(String executionID, int fileCount);
 
         void onDone(String executionID, String resultsDirectory);
     }

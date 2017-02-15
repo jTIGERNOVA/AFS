@@ -68,6 +68,10 @@ public abstract class AFSTask {
         return found;
     }
 
+    protected boolean isAFSFile(String path, String taskName) {
+        return isFile(path) && path.endsWith(getResultFileSuffix(taskName));
+    }
+
     public String getEndpoint() {
         return endpoint;
     }
@@ -111,15 +115,19 @@ public abstract class AFSTask {
         return true;
     }
 
+    private TaskKey toKey() {
+        return new TaskKey(taskID, getExecutionKey(), executionID);
+    }
+
     private void addTaskReference() {
         synchronized (tasksLock) {
-            runningTasks.add(new TaskKey(taskID, getExecutionKey(), executionID));
+            runningTasks.add(toKey());
         }
     }
 
     private void removeTaskReference() {
         synchronized (tasksLock) {
-            runningTasks.remove(new TaskKey(taskID, getExecutionKey(), executionID));
+            runningTasks.remove(toKey());
         }
     }
 
@@ -130,7 +138,15 @@ public abstract class AFSTask {
     protected abstract String getTaskSuffix();
 
     protected File getResultFullPath() {
-        return new File(getExecutionResultDir(), getExecutionID() + "-" + getTaskSuffix() + ".json");
+        return new File(getExecutionResultDir(), getExecutionID() + getResultFileSuffix());
+    }
+
+    protected String getResultFileSuffix() {
+        return "-" + getTaskSuffix() + ".json";
+    }
+
+    protected String getResultFileSuffix(String suffix) {
+        return "-" + suffix + ".json";
     }
 
     public String getResultDir() {
@@ -144,8 +160,14 @@ public abstract class AFSTask {
         if (!resultDir.endsWith(File.separator))
             resultDir += File.separator;
 
+        String tOldDir = _resultDir;
+
         _resultDir = resultDir;
-        _executionResultDir = _resultDir + "0000";
+        if (_executionResultDir == null) {
+            _executionResultDir = _resultDir + executionID;
+        } else {
+            _executionResultDir = _executionResultDir.replace(tOldDir, _resultDir);
+        }
     }
 
     public String getExecutionResultDir() {
@@ -156,12 +178,31 @@ public abstract class AFSTask {
         this._executionResultDir = executionResultDir;
     }
 
+    protected void initExecutionResultDir() {
+        initExecutionResultDir("");
+    }
+
+    protected void initExecutionResultDir(String filePath) {
+        _executionResultDir = getResultDir() + executionID + File.separator + new File(filePath).getName();
+    }
+
     public String getTaskID() {
         return taskID;
     }
 
     public String getExecutionID() {
         return executionID;
+    }
+
+    protected void practicallyDone() {
+        synchronized (tasksLock) {
+            for (TaskKey t : runningTasks) {
+                if (t.equals(toKey())) {
+                    t.isPracticallyDone = true;
+                    break;
+                }
+            }
+        }
     }
 
     public String getToken() {
@@ -177,7 +218,7 @@ public abstract class AFSTask {
 
         synchronized (tasksLock) {
             for (TaskKey t : runningTasks) {
-                if (t.executionKey.equals(getExecutionKey())) {
+                if (t.executionKey.equals(getExecutionKey()) && !t.isPracticallyDone) {
                     result = true;
                     break;
                 }
@@ -191,6 +232,7 @@ public abstract class AFSTask {
         private String taskID;
         private String executionKey;
         private String executionID;
+        private boolean isPracticallyDone;
 
         private TaskKey(String taskID, String executionKey, String executionID) {
             if (taskID == null || executionID == null || executionKey == null)

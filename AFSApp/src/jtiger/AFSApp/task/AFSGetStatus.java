@@ -21,11 +21,14 @@ public class AFSGetStatus extends AFSTask {
 
     public AFSGetStatus(String executionID, String tokenJsonFilePath, String endpoint, boolean triggerGet) {
         super(executionID, endpoint);
-        if (!isFile(tokenJsonFilePath))
-            throw new RuntimeException("Could not find token file. Has the post been completed?");
+        if (!isAFSFile(tokenJsonFilePath, "post"))
+            throw new AFSFormatException("GetStatus", "Has the post been completed?");
 
         this.tokenJsonFilePath = tokenJsonFilePath;
         this.triggerGet = triggerGet;
+
+        //default but may be updated later
+        initExecutionResultDir();
     }
 
     @Override
@@ -81,9 +84,12 @@ public class AFSGetStatus extends AFSTask {
         }
 
         System.out.println("Done with 'GETSTATUS' for token: " + _token + " task: " + getTaskID() + ". Results saved at: " + file.getPath());
+        //work is done
+        practicallyDone();
 
         if (triggerGet) {
-            AFSGet get = new AFSGet(getExecutionID(), file.getPath(), getEndpoint());
+            AFSGetResult get = new AFSGetResult(getExecutionID(), file.getPath(), getEndpoint());
+            //update dir
             get.setExecutionResultDir(getExecutionResultDir());
 
             get.runTask();

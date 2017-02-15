@@ -4,6 +4,7 @@ import jtiger.AFSApp.task.AFSExecution;
 import jtiger.AFSApp.ui.AFSApp;
 import org.apache.commons.io.FileUtils;
 
+import javax.swing.*;
 import java.io.File;
 
 public class Main {
@@ -28,14 +29,51 @@ public class Main {
             @Override
             public void onExecute(AFSApp.AFSInput input) {
                 File[] files = FileUtils.listFiles(new File(input.srcDir), getSupportedFileExtensions(), false).toArray(new File[0]);
+
+                if (files.length == 0) {
+                    JOptionPane.showMessageDialog(null, "No files found. Select another directory");
+                    return;
+                }
+
                 String[] filePaths = new String[files.length];
                 for (int c = 0; c < files.length; c++) {
                     filePaths[c] = files[c].getPath();
                 }
 
-                //TODO allow for starting from getstatus or getresult
-                boolean autoContinue = true;
-                afsExecution.execute(filePaths, input.endpoint, AFSExecution.AFSOption.POST, autoContinue);
+                boolean autoContinue;
+                boolean autoContinueLevelTwo;
+                AFSExecution.AFSOption start = AFSExecution.AFSOption.POST;
+
+                if (input.shouldDoPost && input.shouldDoGetStatus && input.shouldDoGetResult) {
+                    start = AFSExecution.AFSOption.POST;
+
+                    autoContinue = true;
+                    autoContinueLevelTwo = true;
+                } else if (input.shouldDoPost && input.shouldDoGetStatus) {
+                    start = AFSExecution.AFSOption.POST;
+
+                    autoContinue = true;
+                    autoContinueLevelTwo = false;
+                } else if (input.shouldDoGetStatus && input.shouldDoGetResult) {
+                    start = AFSExecution.AFSOption.GETSTATUS;
+
+                    autoContinue = true;
+                    autoContinueLevelTwo = true;
+                } else {
+                    //single task runs
+                    if (input.shouldDoPost)
+                        start = AFSExecution.AFSOption.POST;
+                    else if (input.shouldDoGetStatus)
+                        start = AFSExecution.AFSOption.GETSTATUS;
+                    else if (input.shouldDoGetResult)
+                        start = AFSExecution.AFSOption.GETRESULT;
+
+                    //no starting tasks automatically
+                    autoContinue = false;
+                    autoContinueLevelTwo = false;
+                }
+
+                afsExecution.execute(filePaths, input.endpoint, start, autoContinue, autoContinueLevelTwo);
 
                 //update next run count
                 frame.setExecutionID(AFSExecution.formatExecutionID((AFSExecution.getRunCount())));
@@ -51,14 +89,16 @@ public class Main {
 
         afsExecution.setExecutionStatusListener(new AFSExecution.ExecutionStatusListener() {
             @Override
-            public void onStart(String executionID) {
+            public void onStart(String executionID, int fileCount) {
                 frame.addPendingTask(executionID);
             }
 
             @Override
             public void onDone(String executionID, String resultDirectory) {
                 frame.removePendingTask(executionID);
-                frame.addFinishedTask(executionID, resultDirectory);
+
+                if (new File(resultDirectory).isDirectory())
+                    frame.addFinishedTask(executionID, resultDirectory);
             }
         });
 
@@ -72,6 +112,6 @@ public class Main {
     }
 
     public static String[] getSupportedFileExtensions() {
-        return new String[]{"txt"};
+        return new String[]{"txt", "json"};
     }
 }

@@ -12,19 +12,22 @@ import java.util.Random;
 /**
  * Created by antonioj on 2/3/2017.
  */
-public class AFSGet extends AFSTask {
+public class AFSGetResult extends AFSTask {
 
     static Random r = new Random();
     private final String statusJsonFilePath;
     private String status;
     private String taskResult;
 
-    public AFSGet(String executionID, String statusJsonFilePath, String getEndpoint) {
+    public AFSGetResult(String executionID, String statusJsonFilePath, String getEndpoint) {
         super(executionID, getEndpoint);
-        if (!isFile(statusJsonFilePath))
-            throw new RuntimeException("Could not find status file. Has the GetStatus task been completed?");
+        if (!isAFSFile(statusJsonFilePath, "status"))
+            throw new AFSFormatException("GetResult", "Has the GetStatus task been completed?");
 
         this.statusJsonFilePath = statusJsonFilePath;
+
+        //default but may be updated later
+        initExecutionResultDir();
     }
 
     @Override
@@ -72,6 +75,8 @@ public class AFSGet extends AFSTask {
         }
 
         System.out.println("Done with 'GET' for token: " + _token + " task: " + getTaskID() + ". Results saved at: " + file.getPath());
+        //work is done
+        practicallyDone();
     }
 
     private void doGetCheck() {

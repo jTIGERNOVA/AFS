@@ -11,8 +11,10 @@ import java.util.concurrent.ExecutorService;
  */
 public abstract class AFSTask {
 
-    private static final List<String> runningTasks = Collections.synchronizedList(new ArrayList<String>(100));
+    private static final List<TaskKey> runningTasks = Collections.synchronizedList(new ArrayList<TaskKey>(100));
+    private static final Object tasksLock = new Object();
     private static ExecutorService executor;
+
     private final String taskID;
     private final String executionID;
     protected String _token;
@@ -49,6 +51,23 @@ public abstract class AFSTask {
         return (path != null) && path.trim().length() > 0;
     }
 
+    public static boolean doesTaskWithExecutionIDExist(String exeID) {
+        if (exeID == null)
+            return false;
+
+        boolean found = false;
+        synchronized (tasksLock) {
+            for (TaskKey t : runningTasks) {
+                if (t.executionID.equals(exeID)) {
+                    found = true;
+                    break;
+                }
+            }
+        }
+
+        return found;
+    }
+
     public String getEndpoint() {
         return endpoint;
     }
@@ -75,21 +94,33 @@ public abstract class AFSTask {
             public void run() {
                 String exeKey = getExecutionKey();
 
-                if (runningTasks.contains(exeKey)) {
+                if (isExecutionKeyInTask()) {
                     System.err.println(String.format("Task with %s is already running. Skipping for now...", exeKey));
                     return;
                 }
 
-                runningTasks.add(exeKey);
+                addTaskReference();
 
                 doRun();
 
-                runningTasks.remove(exeKey);
+                removeTaskReference();
             }
         });
 
 
         return true;
+    }
+
+    private void addTaskReference() {
+        synchronized (tasksLock) {
+            runningTasks.add(new TaskKey(taskID, getExecutionKey(), executionID));
+        }
+    }
+
+    private void removeTaskReference() {
+        synchronized (tasksLock) {
+            runningTasks.remove(new TaskKey(taskID, getExecutionKey(), executionID));
+        }
     }
 
     protected abstract void doRun();
@@ -139,5 +170,56 @@ public abstract class AFSTask {
 
     public void setToken(String token) {
         this._token = token;
+    }
+
+    public boolean isExecutionKeyInTask() {
+        boolean result = false;
+
+        synchronized (tasksLock) {
+            for (TaskKey t : runningTasks) {
+                if (t.executionKey.equals(getExecutionKey())) {
+                    result = true;
+                    break;
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private class TaskKey {
+        private String taskID;
+        private String executionKey;
+        private String executionID;
+
+        private TaskKey(String taskID, String executionKey, String executionID) {
+            if (taskID == null || executionID == null || executionKey == null)
+                throw new IllegalArgumentException();
+
+            this.taskID = taskID;
+            this.executionKey = executionKey;
+            this.executionID = executionID;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            TaskKey taskKey = (TaskKey) o;
+
+            if (!taskID.equals(taskKey.taskID)) return false;
+            if (!executionKey.equals(taskKey.executionKey)) return false;
+            return executionID.equals(taskKey.executionID);
+
+        }
+
+        @Override
+        public int hashCode() {
+            int result = taskID.hashCode();
+            result = 31 * result + executionKey.hashCode();
+            result = 31 * result + executionID.hashCode();
+            return result;
+        }
     }
 }

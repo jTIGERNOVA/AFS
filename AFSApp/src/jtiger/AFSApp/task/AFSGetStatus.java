@@ -1,5 +1,6 @@
 package jtiger.AFSApp.task;
 
+import jtiger.AFSApp.Util;
 import org.apache.commons.io.FileUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -32,7 +33,7 @@ public class AFSGetStatus extends AFSTask {
         //read json file
 
         try {
-            JSONObject json = new JSONObject(FileUtils.readFileToString(new File(tokenJsonFilePath), "UTF-8"));
+            JSONObject json = new JSONObject(FileUtils.readFileToString(new File(tokenJsonFilePath), Util.ENCODING));
             _token = json.getString("token");
         } catch (JSONException e) {
             e.printStackTrace();
@@ -74,7 +75,7 @@ public class AFSGetStatus extends AFSTask {
         File file = getResultFullPath();
 
         try {
-            FileUtils.write(file, json, "UTF-8");
+            FileUtils.write(file, json, Util.ENCODING);
         } catch (IOException e) {
             e.printStackTrace();
         }

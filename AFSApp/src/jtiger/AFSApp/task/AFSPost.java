@@ -1,5 +1,6 @@
 package jtiger.AFSApp.task;
 
+import jtiger.AFSApp.Util;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -42,7 +43,7 @@ public class AFSPost extends AFSTask {
         File resultFilePath = getResultFullPath();
 
         try {
-            FileUtils.write(resultFilePath, json, "UTF-8");
+            FileUtils.write(resultFilePath, json, Util.ENCODING);
         } catch (IOException e) {
             e.printStackTrace();
         }

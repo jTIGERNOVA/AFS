@@ -1,5 +1,6 @@
 package jtiger.AFSApp.task;
 
+import jtiger.AFSApp.Util;
 import org.apache.commons.io.FileUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -65,7 +66,7 @@ public class AFSGet extends AFSTask {
         File file = getResultFullPath();
 
         try {
-            FileUtils.write(file, json, "UTF-8");
+            FileUtils.write(file, json, Util.ENCODING);
         } catch (IOException e) {
             e.printStackTrace();
         }

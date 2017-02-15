@@ -23,16 +23,22 @@ public class Main {
         });
 
         frame.setExecutionID(AFSExecution.formatExecutionID((AFSExecution.getRunCount())));
+
         frame.setExecutedListener(new AFSApp.OnAFSExecutedListener() {
             @Override
             public void onExecute(AFSApp.AFSInput input) {
-                File[] files = FileUtils.listFiles(new File(input.srcDir), new String[]{"txt"}, false).toArray(new File[0]);
+                File[] files = FileUtils.listFiles(new File(input.srcDir), getSupportedFileExtensions(), false).toArray(new File[0]);
                 String[] filePaths = new String[files.length];
                 for (int c = 0; c < files.length; c++) {
                     filePaths[c] = files[c].getPath();
                 }
 
-                afsExecution.execute(filePaths, input.endpoint, AFSExecution.AFSOption.POST, true);
+                //TODO allow for starting from getstatus or getresult
+                boolean autoContinue = true;
+                afsExecution.execute(filePaths, input.endpoint, AFSExecution.AFSOption.POST, autoContinue);
+
+                //update next run count
+                frame.setExecutionID(AFSExecution.formatExecutionID((AFSExecution.getRunCount())));
             }
         });
 
@@ -43,6 +49,19 @@ public class Main {
             }
         });
 
+        afsExecution.setExecutionStatusListener(new AFSExecution.ExecutionStatusListener() {
+            @Override
+            public void onStart(String executionID) {
+                frame.addPendingTask(executionID);
+            }
+
+            @Override
+            public void onDone(String executionID, String resultDirectory) {
+                frame.removePendingTask(executionID);
+                frame.addFinishedTask(executionID, resultDirectory);
+            }
+        });
+
         frame.setOnClose(new Runnable() {
             @Override
             public void run() {
@@ -50,5 +69,9 @@ public class Main {
             }
         });
         frame.setVisible(true);
+    }
+
+    public static String[] getSupportedFileExtensions() {
+        return new String[]{"txt"};
     }
 }

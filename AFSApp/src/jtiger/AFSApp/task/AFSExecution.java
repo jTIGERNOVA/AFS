@@ -1,5 +1,6 @@
 package jtiger.AFSApp.task;
 
+import jtiger.AFSApp.Util;
 import org.apache.commons.io.FileUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -21,6 +22,7 @@ public class AFSExecution {
 
     private String resultPath;
     private OnExecutionIDUpdate onExecutionIDUpdate;
+    private ExecutionStatusListener executionStatusListener;
 
     public AFSExecution(String resultPath) {
         this.resultPath = resultPath;
@@ -33,20 +35,20 @@ public class AFSExecution {
 
         try {
             if (prefFile.exists()) {
-                JSONObject pref = new JSONObject(FileUtils.readFileToString(prefFile, "UTF-8"));
+                JSONObject pref = new JSONObject(FileUtils.readFileToString(prefFile, Util.ENCODING));
 
                 if (pref.has("runCount")) {
                     count = pref.getInt("runCount");
                 }
 
                 pref.put("runCount", count + 1);
-                FileUtils.write(prefFile, pref.toString(), "UTF-8");
+                FileUtils.write(prefFile, pref.toString(), Util.ENCODING);
             } else {
                 JSONObject pref = new JSONObject();
 
                 pref.put("runCount", count + 1);
 
-                FileUtils.write(prefFile, pref.toString(), "UTF-8");
+                FileUtils.write(prefFile, pref.toString(), Util.ENCODING);
             }
         } catch (JSONException e) {
             e.printStackTrace();
@@ -62,7 +64,7 @@ public class AFSExecution {
         File prefFile = getPreferencesFile();
         try {
             if (prefFile.exists()) {
-                JSONObject pref = new JSONObject(FileUtils.readFileToString(prefFile, "UTF-8"));
+                JSONObject pref = new JSONObject(FileUtils.readFileToString(prefFile, Util.ENCODING));
 
                 if (pref.has("runCount")) {
                     count = pref.getInt("runCount");
@@ -87,7 +89,10 @@ public class AFSExecution {
 
     public void execute(String[] files, String endpoint, AFSOption startOption, boolean autoContinue) {
         int count = incrementRunCount();
-        String executionID = formatExecutionID(count);
+        final String executionID = formatExecutionID(count);
+
+        //execution started
+        executionStatusListener.onStart(executionID);
 
         if (onExecutionIDUpdate != null)
             onExecutionIDUpdate.update(executionID);
@@ -107,6 +112,33 @@ public class AFSExecution {
                 task.runTask();
             }
         }
+
+        //start a new thread to check for execution status of tasks
+        threadPoolExecutor.execute(new Runnable() {
+            @Override
+            public void run() {
+                boolean tasksRunning = true;
+                do {
+                    try {
+                        Thread.sleep(2000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                    tasksRunning = AFSTask.doesTaskWithExecutionIDExist(executionID);
+
+                    //no more tasks for this execution
+                    if (!tasksRunning) {
+                        String tPath = resultPath;
+                        if (!tPath.endsWith(File.separator))
+                            tPath += File.separator;
+                        tPath += executionID;
+
+                        executionStatusListener.onDone(executionID, tPath);
+                    }
+                } while (tasksRunning);
+            }
+        });
     }
 
     public OnExecutionIDUpdate getOnExecutionIDUpdate() {
@@ -115,6 +147,14 @@ public class AFSExecution {
 
     public void setOnExecutionIDUpdate(OnExecutionIDUpdate onExecutionIDUpdate) {
         this.onExecutionIDUpdate = onExecutionIDUpdate;
+    }
+
+    public ExecutionStatusListener getExecutionStatusListener() {
+        return executionStatusListener;
+    }
+
+    public void setExecutionStatusListener(ExecutionStatusListener executionStatusListener) {
+        this.executionStatusListener = executionStatusListener;
     }
 
     public String getResultPath() {
@@ -135,6 +175,12 @@ public class AFSExecution {
 
     public interface OnExecutionIDUpdate {
         void update(String newExecutionID);
+    }
+
+    public interface ExecutionStatusListener {
+        void onStart(String executionID);
+
+        void onDone(String executionID, String resultsDirectory);
     }
 }
 

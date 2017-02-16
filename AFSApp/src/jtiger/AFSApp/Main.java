@@ -2,10 +2,12 @@ package jtiger.AFSApp;
 
 import jtiger.AFSApp.task.AFSExecution;
 import jtiger.AFSApp.ui.AFSApp;
+import jtiger.AFSApp.ui.ExecutionStatusModel;
 import org.apache.commons.io.FileUtils;
 
 import javax.swing.*;
 import java.io.File;
+import java.util.Arrays;
 
 public class Main {
 
@@ -31,7 +33,7 @@ public class Main {
                 File[] files = FileUtils.listFiles(new File(input.srcDir), Util.getSupportedFileExtensions(), false).toArray(new File[0]);
 
                 if (files.length == 0) {
-                    JOptionPane.showMessageDialog(null, "No files found. Select another directory");
+                    JOptionPane.showMessageDialog(null, String.format("No files found (%s). Select another directory", Arrays.toString(Util.getSupportedFileExtensions())));
                     return;
                 }
 
@@ -90,7 +92,11 @@ public class Main {
         afsExecution.setExecutionStatusListener(new AFSExecution.ExecutionStatusListener() {
             @Override
             public void onStart(String executionID, int fileCount) {
-                frame.addPendingTask(executionID);
+                ExecutionStatusModel model = new ExecutionStatusModel(executionID);
+
+                model.setExecutionTasksCount(fileCount);
+
+                frame.addPendingTask(model);
             }
 
             @Override
